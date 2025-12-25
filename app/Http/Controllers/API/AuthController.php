@@ -1,18 +1,16 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Controller;
+
 
 class AuthController extends Controller
 {
-    public function signIn(){
-        return view('auth.signin');
-    }
-
     public function registr(Request $request){
         $request->validate([
             'name'=>'required',
@@ -25,11 +23,7 @@ class AuthController extends Controller
             'email'=>$request->email,
             'password'=>Hash::make($request->password),
         ]);
-        return redirect()->route('login');
-    }
-
-    public function login(){
-        return view('auth.login');
+        return response()->json($user);
     }
 
     public function authenticate(Request $request){
@@ -39,19 +33,14 @@ class AuthController extends Controller
         ]);
 
         if(Auth::attempt($credentials, $request->remember)){
-            $request->session()->regenerate();
-            return redirect()->intended('/');
+            $token = $request->user()->createToken('MyAppToken')->plainTextToken;
+            return response()->json($token);
         }
 
-        return back()->withErrors([
-            'email'=>'Предоставленные учетные данные не соответствуют нашим записям.',
-        ])->onlyInput('email');
-    } 
-    
+    }    
+
     public function logout(Request $request){
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return  redirect()->route('login');
-    }   
+        $request->user()->tokens()->delete();
+        return  response('logout');
+    }
 }

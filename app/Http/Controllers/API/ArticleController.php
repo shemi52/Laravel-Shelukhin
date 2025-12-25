@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API;
 
 use App\Models\Article;
 use App\Models\Comment;
@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Events\NewArticleEvent;
+use App\Http\Controllers\Controller;
 
 class ArticleController extends Controller
 {
@@ -21,7 +22,7 @@ class ArticleController extends Controller
         $articles = Cache::remember('articles_'.$page, 300, function(){
             return Article::latest()->paginate(5); 
         });
-        return view('/article/article', ['articles'=>$articles]);
+        return response()->json($articles);
     }
 
     /**
@@ -29,8 +30,6 @@ class ArticleController extends Controller
      */
     public function create()
     {
-        Gate::authorize('create', Article::class);
-        return view('article.create');
     }
 
     /**
@@ -56,7 +55,7 @@ class ArticleController extends Controller
         if($article->save()){
             NewArticleEvent::dispatch($article);
         }
-        return redirect()->route('article.index')->with('message','Create successful');
+        return response()->json($article);
     }
 
     /**
@@ -69,7 +68,7 @@ class ArticleController extends Controller
                                 ->where('accept', true)
                                 ->get();
             });
-            return view('article.show', ['article'=>$article, 'comment'=>$comments]);
+        return response()->json(['article'=>$article, 'comments'=>$comments]);
         }
 
     /**
@@ -78,7 +77,7 @@ class ArticleController extends Controller
     public function edit(Article $article)
     {
         Gate::authorize('restore', $article);
-        return view('article.edit', ['article'=>$article]);
+        return response()->json($article);
     }
 
     /**
@@ -102,7 +101,7 @@ class ArticleController extends Controller
                 Cache::forget($param->key);
             }
         }
-        return redirect()->route('article.show', ['article'=>$article->id])->with('message','Update successful');
+        return response('Update successful');
     }
 
     /**
@@ -118,6 +117,6 @@ class ArticleController extends Controller
                 Cache::forget($param->key);
             }
         }
-        return redirect()->route('article.index')->with('message','Delete successful');
+        return response('Delete successful');
     }
 }
